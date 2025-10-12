@@ -22,10 +22,20 @@ const team2NameEl = document.getElementById('team2Name');
 document.addEventListener('DOMContentLoaded', function() {
     loadGameState();
     updateDisplay();
+    handleOrientation();
     
     // Salva estado quando os nomes dos times mudam
     team1NameEl.addEventListener('input', saveGameState);
     team2NameEl.addEventListener('input', saveGameState);
+    
+    // Monitora mudanças de orientação
+    window.addEventListener('orientationchange', function() {
+        setTimeout(handleOrientation, 100);
+    });
+    
+    window.addEventListener('resize', function() {
+        handleOrientation();
+    });
 });
 
 // Funções do placar
@@ -71,15 +81,6 @@ function updateDisplay() {
     }, 300);
 }
 
-function resetScores() {
-    if (confirm('Tem certeza que deseja resetar os placares?')) {
-        gameState.team1.score = 0;
-        gameState.team2.score = 0;
-        gameState.lastUpdate = new Date().toISOString();
-        updateDisplay();
-        saveGameState();
-    }
-}
 
 
 
@@ -235,4 +236,43 @@ window.addEventListener('appinstalled', () => {
     console.log('PWA foi instalado');
     deferredPrompt = null;
 });
+
+// Função para lidar com orientação e centralização
+function handleOrientation() {
+    // Força o redimensionamento da viewport
+    const viewport = document.querySelector('meta[name=viewport]');
+    if (viewport) {
+        viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, user-scalable=no');
+    }
+    
+    // Ajusta a altura do body para evitar faixas
+    document.body.style.height = window.innerHeight + 'px';
+    
+    // Centraliza o conteúdo
+    setTimeout(() => {
+        const scoreboard = document.querySelector('.scoreboard');
+        if (scoreboard) {
+            scoreboard.style.height = window.innerHeight + 'px';
+        }
+        
+        const scoreboardContent = document.querySelector('.scoreboard-content');
+        if (scoreboardContent) {
+            scoreboardContent.style.minHeight = (window.innerHeight - 40) + 'px';
+        }
+    }, 50);
+}
+
+// Função para resetar e centralizar (chamada pelo botão resetar)
+function resetScores() {
+    if (confirm('Tem certeza que deseja resetar os placares?')) {
+        gameState.team1.score = 0;
+        gameState.team2.score = 0;
+        gameState.lastUpdate = new Date().toISOString();
+        updateDisplay();
+        saveGameState();
+        
+        // Centraliza após reset
+        setTimeout(handleOrientation, 100);
+    }
+}
 
