@@ -30,12 +30,20 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Monitora mudanças de orientação
     window.addEventListener('orientationchange', function() {
-        setTimeout(handleOrientation, 100);
+        setTimeout(handleOrientation, 200);
     });
     
     window.addEventListener('resize', function() {
         handleOrientation();
     });
+    
+    // Detecta mudanças de orientação em dispositivos móveis
+    window.addEventListener('deviceorientation', function() {
+        setTimeout(handleOrientation, 100);
+    });
+    
+    // Força ajuste inicial
+    setTimeout(handleOrientation, 500);
 });
 
 // Funções do placar
@@ -239,27 +247,45 @@ window.addEventListener('appinstalled', () => {
 
 // Função para lidar com orientação e centralização
 function handleOrientation() {
+    // Remove qualquer faixa verde
+    document.documentElement.style.height = '100vh';
+    document.body.style.height = '100vh';
+    document.body.style.margin = '0';
+    document.body.style.padding = '0';
+    
     // Força o redimensionamento da viewport
     const viewport = document.querySelector('meta[name=viewport]');
     if (viewport) {
-        viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, user-scalable=no');
+        viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover');
     }
     
-    // Ajusta a altura do body para evitar faixas
-    document.body.style.height = window.innerHeight + 'px';
+    // Ajusta altura para a viewport atual
+    const vh = window.innerHeight;
+    const vw = window.innerWidth;
+    
+    document.body.style.height = vh + 'px';
+    document.documentElement.style.height = vh + 'px';
     
     // Centraliza o conteúdo
     setTimeout(() => {
         const scoreboard = document.querySelector('.scoreboard');
         if (scoreboard) {
-            scoreboard.style.height = window.innerHeight + 'px';
+            scoreboard.style.width = vw + 'px';
+            scoreboard.style.height = vh + 'px';
         }
         
         const scoreboardContent = document.querySelector('.scoreboard-content');
         if (scoreboardContent) {
-            scoreboardContent.style.minHeight = (window.innerHeight - 40) + 'px';
+            scoreboardContent.style.height = vh + 'px';
+            scoreboardContent.style.width = vw + 'px';
         }
-    }, 50);
+        
+        const container = document.querySelector('.container');
+        if (container) {
+            container.style.width = vw + 'px';
+            container.style.height = vh + 'px';
+        }
+    }, 100);
 }
 
 // Função para resetar e centralizar (chamada pelo botão resetar)
