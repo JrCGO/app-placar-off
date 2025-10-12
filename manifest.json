@@ -1,0 +1,65 @@
+{
+    "name": "App Placar",
+    "short_name": "Placar",
+    "description": "App de placar para dois times - funciona offline",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#667eea",
+    "theme_color": "#2E7D32",
+    "orientation": "landscape",
+    "scope": "/",
+    "lang": "pt-BR",
+    "dir": "ltr",
+    "categories": ["sports", "games", "utilities"],
+    "icons": [
+        {
+            "src": "icon.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "Novo Jogo",
+            "short_name": "Novo",
+            "description": "Iniciar um novo jogo",
+            "url": "/?action=new"
+        },
+        {
+            "name": "Reset Placar",
+            "short_name": "Reset",
+            "description": "Resetar os placares",
+            "url": "/?action=reset"
+        }
+    ],
+    "related_applications": [],
+    "prefer_related_applications": false,
+    "edge_side_panel": {
+        "preferred_width": 400
+    },
+    "launch_handler": {
+        "client_mode": "navigate-existing"
+    },
+    "handle_links": "preferred",
+    "capture_links": "new-client",
+    "file_handlers": [],
+    "protocol_handlers": [],
+    "share_target": {
+        "action": "/",
+        "method": "GET",
+        "params": {
+            "title": "title",
+            "text": "text",
+            "url": "url"
+        }
+    },
+    "permissions": [
+        "notifications"
+    ],
+    "features": [
+        "Cross Platform",
+        "fast",
+        "simple"
+    ]
+}
