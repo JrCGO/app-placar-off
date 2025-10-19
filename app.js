@@ -13,10 +13,7 @@ let gameState = {
 
 // Controle de orientação inteligente
 let orientationState = {
-    isLandscape: false,
-    lastOrientation: 0,
-    team1Position: 'left', // 'left' ou 'right'
-    userPreference: null // 'left' ou 'right' baseado no uso
+    userPreference: null // 'left' ou 'right' - qual lado o usuário prefere para Time 1
 };
 
 
@@ -153,9 +150,6 @@ function loadOrientationState() {
         if (saved) {
             const parsedState = JSON.parse(saved);
             orientationState = {
-                isLandscape: parsedState.isLandscape || false,
-                lastOrientation: parsedState.lastOrientation || 0,
-                team1Position: parsedState.team1Position || 'left',
                 userPreference: parsedState.userPreference || null
             };
             console.log('Estado de orientação carregado:', orientationState);
@@ -295,21 +289,16 @@ function detectUserPreference(teamNumber) {
     const currentOrientation = window.orientation || screen.orientation?.angle || 0;
     const isLandscape = Math.abs(currentOrientation) === 90;
     
-    if (isLandscape) {
-        // Em landscape, determina qual lado o usuário está usando baseado na orientação atual
-        const isLeftSide = currentOrientation === 90; // 90° = lado esquerdo, -90° = lado direito
-        
+    if (isLandscape && !orientationState.userPreference) {
+        // Detecta qual lado o usuário está usando
+        // 90° = Time 1 à esquerda, -90° = Time 1 à direita
         if (teamNumber === 1) {
-            // Time 1 foi marcado - define preferência baseada na posição atual
-            orientationState.userPreference = isLeftSide ? 'left' : 'right';
-            orientationState.team1Position = isLeftSide ? 'left' : 'right';
+            orientationState.userPreference = currentOrientation === 90 ? 'left' : 'right';
         } else {
-            // Time 2 foi marcado - define preferência oposta
-            orientationState.userPreference = isLeftSide ? 'right' : 'left';
-            orientationState.team1Position = isLeftSide ? 'right' : 'left';
+            orientationState.userPreference = currentOrientation === 90 ? 'right' : 'left';
         }
         
-        console.log('Preferência detectada:', orientationState.userPreference, 'Time 1 posição:', orientationState.team1Position);
+        console.log('Preferência detectada:', orientationState.userPreference);
         saveOrientationState();
     }
 }
@@ -327,14 +316,6 @@ function handleOrientation() {
     if (viewport) {
         viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover');
     }
-    
-    // Detecta orientação atual
-    const currentOrientation = window.orientation || screen.orientation?.angle || 0;
-    const isLandscape = Math.abs(currentOrientation) === 90;
-    
-    // Atualiza estado de orientação
-    orientationState.isLandscape = isLandscape;
-    orientationState.lastOrientation = currentOrientation;
     
     // Ajusta altura para a viewport atual
     const vh = window.innerHeight;
@@ -373,23 +354,26 @@ function applyIntelligentLayout() {
     const scoreboardContent = document.querySelector('.scoreboard-content');
     if (!scoreboardContent) return;
     
-    // Se não há preferência definida, mantém layout padrão
-    if (!orientationState.userPreference) {
-        scoreboardContent.style.flexDirection = orientationState.isLandscape ? 'row' : 'column';
-        return;
-    }
+    const currentOrientation = window.orientation || screen.orientation?.angle || 0;
+    const isLandscape = Math.abs(currentOrientation) === 90;
     
-    // Aplica layout baseado na preferência do usuário
-    if (orientationState.isLandscape) {
-        scoreboardContent.style.flexDirection = 'row';
-        
-        // Se usuário prefere Time 1 à esquerda, mantém ordem normal
-        // Se usuário prefere Time 1 à direita, inverte ordem
-        if (orientationState.userPreference === 'right') {
-            scoreboardContent.style.flexDirection = 'row-reverse';
+    if (isLandscape) {
+        // Se tem preferência salva, aplica ela
+        if (orientationState.userPreference) {
+            // Se usuário prefere Time 1 à esquerda
+            if (orientationState.userPreference === 'left') {
+                // Mantém ordem normal quando Time 1 está à esquerda (90°)
+                scoreboardContent.style.flexDirection = currentOrientation === 90 ? 'row' : 'row-reverse';
+            } else {
+                // Inverte ordem quando Time 1 está à direita (-90°)
+                scoreboardContent.style.flexDirection = currentOrientation === 90 ? 'row-reverse' : 'row';
+            }
+        } else {
+            // Sem preferência, usa layout padrão
+            scoreboardContent.style.flexDirection = 'row';
         }
     } else {
-        // Em portrait, sempre mantém ordem vertical normal
+        // Em portrait, sempre vertical
         scoreboardContent.style.flexDirection = 'column';
     }
 }
