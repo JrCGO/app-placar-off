@@ -11,6 +11,14 @@ let gameState = {
     lastUpdate: new Date().toISOString()
 };
 
+// Controle de orientação inteligente
+let orientationState = {
+    isLandscape: false,
+    lastOrientation: 0,
+    team1Position: 'left', // 'left' ou 'right'
+    userPreference: null // 'left' ou 'right' baseado no uso
+};
+
 
 // Elementos DOM
 const team1ScoreEl = document.getElementById('team1Score');
@@ -21,6 +29,7 @@ const team2NameEl = document.getElementById('team2Name');
 // Inicialização
 document.addEventListener('DOMContentLoaded', function() {
     loadGameState();
+    loadOrientationState();
     updateDisplay();
     handleOrientation();
     
@@ -50,8 +59,12 @@ document.addEventListener('DOMContentLoaded', function() {
 function increaseScore(teamNumber) {
     if (teamNumber === 1) {
         gameState.team1.score++;
+        // Detecta preferência do usuário baseada na posição atual
+        detectUserPreference(1);
     } else {
         gameState.team2.score++;
+        // Detecta preferência do usuário baseada na posição atual
+        detectUserPreference(2);
     }
     
     gameState.lastUpdate = new Date().toISOString();
@@ -63,8 +76,12 @@ function increaseScore(teamNumber) {
 function decreaseScore(teamNumber) {
     if (teamNumber === 1) {
         gameState.team1.score = Math.max(0, gameState.team1.score - 1);
+        // Detecta preferência do usuário baseada na posição atual
+        detectUserPreference(1);
     } else {
         gameState.team2.score = Math.max(0, gameState.team2.score - 1);
+        // Detecta preferência do usuário baseada na posição atual
+        detectUserPreference(2);
     }
     
     gameState.lastUpdate = new Date().toISOString();
@@ -117,6 +134,34 @@ function loadGameState() {
     } catch (error) {
         console.error('Erro ao carregar estado:', error);
         // Mantém o estado padrão se houver erro
+    }
+}
+
+// Persistência do estado de orientação
+function saveOrientationState() {
+    try {
+        localStorage.setItem('placarOrientationState', JSON.stringify(orientationState));
+        console.log('Estado de orientação salvo:', orientationState);
+    } catch (error) {
+        console.error('Erro ao salvar estado de orientação:', error);
+    }
+}
+
+function loadOrientationState() {
+    try {
+        const saved = localStorage.getItem('placarOrientationState');
+        if (saved) {
+            const parsedState = JSON.parse(saved);
+            orientationState = {
+                isLandscape: parsedState.isLandscape || false,
+                lastOrientation: parsedState.lastOrientation || 0,
+                team1Position: parsedState.team1Position || 'left',
+                userPreference: parsedState.userPreference || null
+            };
+            console.log('Estado de orientação carregado:', orientationState);
+        }
+    } catch (error) {
+        console.error('Erro ao carregar estado de orientação:', error);
     }
 }
 
@@ -245,7 +290,31 @@ window.addEventListener('appinstalled', () => {
     deferredPrompt = null;
 });
 
-// Função para lidar com orientação e centralização
+// Função para detectar preferência do usuário
+function detectUserPreference(teamNumber) {
+    const currentOrientation = window.orientation || screen.orientation?.angle || 0;
+    const isLandscape = Math.abs(currentOrientation) === 90;
+    
+    if (isLandscape) {
+        // Em landscape, determina qual lado o usuário está usando baseado na orientação atual
+        const isLeftSide = currentOrientation === 90; // 90° = lado esquerdo, -90° = lado direito
+        
+        if (teamNumber === 1) {
+            // Time 1 foi marcado - define preferência baseada na posição atual
+            orientationState.userPreference = isLeftSide ? 'left' : 'right';
+            orientationState.team1Position = isLeftSide ? 'left' : 'right';
+        } else {
+            // Time 2 foi marcado - define preferência oposta
+            orientationState.userPreference = isLeftSide ? 'right' : 'left';
+            orientationState.team1Position = isLeftSide ? 'right' : 'left';
+        }
+        
+        console.log('Preferência detectada:', orientationState.userPreference, 'Time 1 posição:', orientationState.team1Position);
+        saveOrientationState();
+    }
+}
+
+// Função para lidar com orientação e centralização inteligente
 function handleOrientation() {
     // Remove qualquer faixa verde
     document.documentElement.style.height = '100vh';
@@ -259,12 +328,23 @@ function handleOrientation() {
         viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover');
     }
     
+    // Detecta orientação atual
+    const currentOrientation = window.orientation || screen.orientation?.angle || 0;
+    const isLandscape = Math.abs(currentOrientation) === 90;
+    
+    // Atualiza estado de orientação
+    orientationState.isLandscape = isLandscape;
+    orientationState.lastOrientation = currentOrientation;
+    
     // Ajusta altura para a viewport atual
     const vh = window.innerHeight;
     const vw = window.innerWidth;
     
     document.body.style.height = vh + 'px';
     document.documentElement.style.height = vh + 'px';
+    
+    // Aplica layout inteligente
+    applyIntelligentLayout();
     
     // Centraliza o conteúdo
     setTimeout(() => {
@@ -286,6 +366,32 @@ function handleOrientation() {
             container.style.height = vh + 'px';
         }
     }, 100);
+}
+
+// Função para aplicar layout inteligente
+function applyIntelligentLayout() {
+    const scoreboardContent = document.querySelector('.scoreboard-content');
+    if (!scoreboardContent) return;
+    
+    // Se não há preferência definida, mantém layout padrão
+    if (!orientationState.userPreference) {
+        scoreboardContent.style.flexDirection = orientationState.isLandscape ? 'row' : 'column';
+        return;
+    }
+    
+    // Aplica layout baseado na preferência do usuário
+    if (orientationState.isLandscape) {
+        scoreboardContent.style.flexDirection = 'row';
+        
+        // Se usuário prefere Time 1 à esquerda, mantém ordem normal
+        // Se usuário prefere Time 1 à direita, inverte ordem
+        if (orientationState.userPreference === 'right') {
+            scoreboardContent.style.flexDirection = 'row-reverse';
+        }
+    } else {
+        // Em portrait, sempre mantém ordem vertical normal
+        scoreboardContent.style.flexDirection = 'column';
+    }
 }
 
 // Função para resetar e centralizar (chamada pelo botão resetar)
