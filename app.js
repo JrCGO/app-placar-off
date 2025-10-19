@@ -11,10 +11,6 @@ let gameState = {
     lastUpdate: new Date().toISOString()
 };
 
-// Controle de orientação inteligente
-let orientationState = {
-    cameraSide: null // 'left' ou 'right' - qual lado da câmera o Time 1 deve ficar
-};
 
 
 // Elementos DOM
@@ -26,7 +22,6 @@ const team2NameEl = document.getElementById('team2Name');
 // Inicialização
 document.addEventListener('DOMContentLoaded', function() {
     loadGameState();
-    loadOrientationState();
     updateDisplay();
     handleOrientation();
     
@@ -56,12 +51,8 @@ document.addEventListener('DOMContentLoaded', function() {
 function increaseScore(teamNumber) {
     if (teamNumber === 1) {
         gameState.team1.score++;
-        // Detecta preferência do usuário baseada na posição atual
-        detectUserPreference(1);
     } else {
         gameState.team2.score++;
-        // Detecta preferência do usuário baseada na posição atual
-        detectUserPreference(2);
     }
     
     gameState.lastUpdate = new Date().toISOString();
@@ -73,12 +64,8 @@ function increaseScore(teamNumber) {
 function decreaseScore(teamNumber) {
     if (teamNumber === 1) {
         gameState.team1.score = Math.max(0, gameState.team1.score - 1);
-        // Detecta preferência do usuário baseada na posição atual
-        detectUserPreference(1);
     } else {
         gameState.team2.score = Math.max(0, gameState.team2.score - 1);
-        // Detecta preferência do usuário baseada na posição atual
-        detectUserPreference(2);
     }
     
     gameState.lastUpdate = new Date().toISOString();
@@ -134,30 +121,6 @@ function loadGameState() {
     }
 }
 
-// Persistência do estado de orientação
-function saveOrientationState() {
-    try {
-        localStorage.setItem('placarOrientationState', JSON.stringify(orientationState));
-        console.log('Estado de orientação salvo:', orientationState);
-    } catch (error) {
-        console.error('Erro ao salvar estado de orientação:', error);
-    }
-}
-
-function loadOrientationState() {
-    try {
-        const saved = localStorage.getItem('placarOrientationState');
-        if (saved) {
-            const parsedState = JSON.parse(saved);
-            orientationState = {
-                cameraSide: parsedState.cameraSide || null
-            };
-            console.log('Estado de orientação carregado:', orientationState);
-        }
-    } catch (error) {
-        console.error('Erro ao carregar estado de orientação:', error);
-    }
-}
 
 
 // Som de feedback (opcional)
@@ -284,26 +247,6 @@ window.addEventListener('appinstalled', () => {
     deferredPrompt = null;
 });
 
-// Função para detectar preferência do usuário
-function detectUserPreference(teamNumber) {
-    const currentOrientation = window.orientation || screen.orientation?.angle || 0;
-    const isLandscape = Math.abs(currentOrientation) === 90;
-    
-    if (isLandscape && !orientationState.cameraSide) {
-        // Detecta qual lado da câmera o Time 1 deve ficar
-        // Em landscape, determina baseado na orientação atual
-        if (teamNumber === 1) {
-            // Time 1 foi marcado - define que Time 1 fica do lado da câmera
-            orientationState.cameraSide = currentOrientation === 90 ? 'left' : 'right';
-        } else {
-            // Time 2 foi marcado - Time 1 fica do lado oposto da câmera
-            orientationState.cameraSide = currentOrientation === 90 ? 'right' : 'left';
-        }
-        
-        console.log('Lado da câmera detectado:', orientationState.cameraSide);
-        saveOrientationState();
-    }
-}
 
 // Função para lidar com orientação e centralização inteligente
 function handleOrientation() {
@@ -360,20 +303,8 @@ function applyIntelligentLayout() {
     const isLandscape = Math.abs(currentOrientation) === 90;
     
     if (isLandscape) {
-        // Se tem preferência salva, aplica ela
-        if (orientationState.cameraSide) {
-            // Time 1 deve ficar sempre do lado da câmera
-            if (orientationState.cameraSide === 'left') {
-                // Time 1 à esquerda da câmera
-                scoreboardContent.style.flexDirection = currentOrientation === 90 ? 'row' : 'row-reverse';
-            } else {
-                // Time 1 à direita da câmera
-                scoreboardContent.style.flexDirection = currentOrientation === 90 ? 'row-reverse' : 'row';
-            }
-        } else {
-            // Sem preferência, usa layout padrão
-            scoreboardContent.style.flexDirection = 'row';
-        }
+        // Em landscape, sempre Time 1 à esquerda, Time 2 à direita
+        scoreboardContent.style.flexDirection = 'row';
     } else {
         // Em portrait, sempre vertical
         scoreboardContent.style.flexDirection = 'column';
